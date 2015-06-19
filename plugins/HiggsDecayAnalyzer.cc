@@ -107,23 +107,56 @@ HiggsDecayAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
    edm::Handle<reco::GenParticleCollection> genParticles;
    iEvent.getByLabel(src,genParticles);
 
-   // loop over GenParticles and select Higgs bosons
+   // loop over GenParticles
    for(reco::GenParticleCollection::const_iterator it = genParticles->begin(); it != genParticles->end(); ++it)
    {
-     if( abs(it->pdgId())!=25 ) continue;
-
-     if( it->numberOfDaughters()==0 )
+     // if a Higgs boson
+     if( abs(it->pdgId())==25 )
      {
-       edm::LogError("ZeroDecayProducts") << "Zero decay products found. This is not expected.";
+       if( it->numberOfDaughters()==0 )
+       {
+         edm::LogError("ZeroDecayProducts") << "Zero decay products found. This is not expected.";
 
-       h1_DecayPdgId->Fill( 0 );
+         h1_DecayPdgId->Fill( 0 );
 
-       continue;
+         continue;
+       }
+
+       h1_DecayPdgId->Fill( abs(it->daughter(0)->pdgId()) );
      }
 
-     h1_DecayPdgId->Fill( abs(it->daughter(0)->pdgId()) );
-   }
+//      // check if there are any dangling daughter pointers
+//      for (size_t i = 0; i<it->numberOfDaughters(); ++i)
+//      {
+//        bool particleFound = false;
+//        for(reco::GenParticleCollection::const_iterator it_2 = genParticles->begin(); it_2 != genParticles->end(); ++it_2)
+//        {
+//          if ( it->daughter(i) == &(*it_2) )
+//          {
+//            //edm::LogError("OriginalIndex") << " " << (it_2-genParticles->begin());
+//            particleFound = true;
+//          }
+//        }
+//        if (particleFound == false)
+//           edm::LogError("MissingDaughterParticle") << "Dangling daughter pointer found.";
+//      }
 
+//      // check if there are any dangling mother pointers
+//      for (size_t i = 0; i<it->numberOfMothers(); ++i)
+//      {
+//        bool particleFound = false;
+//        for(reco::GenParticleCollection::const_iterator it_2 = genParticles->begin(); it_2 != genParticles->end(); ++it_2)
+//        {
+//          if ( it->mother(i) == &(*it_2) )
+//          {
+//            //edm::LogError("OriginalIndex") << " " << (it_2-genParticles->begin());
+//            particleFound = true;
+//          }
+//        }
+//        if (particleFound == false)
+//           edm::LogError("MissingMotherParticle") << "Dangling mother pointer found.";
+//      }
+   }
 }
 
 
