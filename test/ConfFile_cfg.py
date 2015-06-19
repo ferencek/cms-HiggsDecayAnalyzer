@@ -15,6 +15,11 @@ options.register('wantSummary', True,
     VarParsing.varType.bool,
     "Print out trigger and timing summary"
 )
+options.register('useInputDir', False,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.bool,
+    "Use input directory"
+)
 options.register('outFilename', 'decay_histo.root',
     VarParsing.multiplicity.singleton,
     VarParsing.varType.string,
@@ -42,7 +47,7 @@ process.TFileService = cms.Service("TFileService",
    fileName = cms.string(options.outFilename)
 )
 
-inputDir = '/eos/uscms/store/user/algomez/St2TOhst1_RPVSt1tojj_pythia8_13TeV/500st2TOhst1_100RPVst1TOjj_v706patch1/141202_040514/0000/'
+inputDir = '/eos/uscms/store/user/ferencek/noreplica/Stop2ToStop1H_TuneCUETP8M1_13TeV-madgraph-pythia8/RunIISpring15DR74_AODSIM/150612_162933/0000/'
 inputFiles = []
 for f in os.listdir(inputDir):
     if not os.path.isfile(os.path.join(inputDir,f)) or not f.endswith('.root'):
@@ -51,23 +56,58 @@ for f in os.listdir(inputDir):
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        #'/store/user/algomez/St2TOhst1_RPVSt1tojj_pythia8_13TeV/500st2TOhst1_100RPVst1TOjj_v706patch1/141202_040514/0000/500St2TOhst1_100RPVSt1tojj_13TeV_pythia8_GEN_1.root'
-        #'/store/user/algomez/St2TOhst1_RPVSt1tojj_pythia8_13TeV/500st2TOhst1_100RPVst1TOjj_v706patch1/141202_040514/0000/500St2TOhst1_100RPVSt1tojj_13TeV_pythia8_GEN_286.root'
-        #'/store/user/algomez/St2TOhst1_RPVSt1tojj_pythia8_13TeV/500st2TOhst1_100RPVst1TOjj_v706patch1/141202_040514/0000/500St2TOhst1_100RPVSt1tojj_13TeV_pythia8_GEN_345.root'
+        # MiniAOD
+        #'/store/user/ferencek/noreplica/Stop2ToStop1H_TuneCUETP8M1_13TeV-madgraph-pythia8/RunIISpring15DR74_MiniAOD/150613_192348/0000/Stop2ToStop1H_TuneCUETP8M1_13TeV-madgraph-pythia8_MiniAOD_Asympt25ns_1.root'
+        # AOD
+        '/store/user/ferencek/noreplica/Stop2ToStop1H_TuneCUETP8M1_13TeV-madgraph-pythia8/RunIISpring15DR74_AODSIM/150612_162933/0000/Stop2ToStop1H_TuneCUETP8M1_13TeV-madgraph-pythia8_AODSIM_Asympt25ns_1.root'
     ),
     #eventsToProcess = cms.untracked.VEventRange('1:19')
     #eventsToProcess = cms.untracked.VEventRange('1:25')
     #eventsToProcess = cms.untracked.VEventRange('1:23')
 )
-process.source.fileNames.extend( inputFiles ) # see https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuidePoolInputSources#Example_3_More_than_255_input_fi
+if options.useInputDir:
+    process.source.fileNames = cms.untracked.vstring()
+    process.source.fileNames.extend( inputFiles ) # see https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuidePoolInputSources#Example_3_More_than_255_input_fi
 
 process.prunedGenParticles = cms.EDProducer('GenParticlePruner',
     src = cms.InputTag("genParticles"),
     select = cms.vstring(
+        # MiniAOD configuration
+        #"drop  *", # this is the default
+        #"++keep abs(pdgId) == 11 || abs(pdgId) == 13 || abs(pdgId) == 15", # keep leptons, with history
+        #"keep abs(pdgId) == 12 || abs(pdgId) == 14 || abs(pdgId) == 16",   # keep neutrinos
+        #"drop   status == 2",                                              # drop the shower part of the history
+        #"+keep pdgId == 22 && status == 1 && (pt > 10 || isPromptFinalState())", # keep gamma above 10 GeV (or all prompt) and its first parent
+        #"+keep abs(pdgId) == 11 && status == 1 && (pt > 3 || isPromptFinalState())", # keep first parent of electrons above 3 GeV (or prompt)
+        #"keep++ abs(pdgId) == 15",                                         # but keep keep taus with decays
+        #"drop  status > 30 && status < 70 ",                               #remove pythia8 garbage
+        #"drop  pdgId == 21 && pt < 5",                                    #remove pythia8 garbage
+        #"drop   status == 2 && abs(pdgId) == 21",                          # but remove again gluons in the inheritance chain
+        #"keep abs(pdgId) == 23 || abs(pdgId) == 24 || abs(pdgId) == 25 || abs(pdgId) == 6 || abs(pdgId) == 37 ",   # keep VIP(articles)s
+        #"keep abs(pdgId) == 310 && abs(eta) < 2.5 && pt > 1 ",                                                     # keep K0
+        ## keep heavy flavour quarks for parton-based jet flavour
+        #"keep (4 <= abs(pdgId) <= 5) & (status = 2 || status = 11 || status = 71 || status = 72)",
+        ## keep light-flavour quarks and gluons for parton-based jet flavour
+        #"keep (1 <= abs(pdgId) <= 3 || pdgId = 21) & (status = 2 || status = 11 || status = 71 || status = 72) && pt>5", 
+        ## keep b and c hadrons for hadron-based jet flavour
+        #"keep (400 < abs(pdgId) < 600) || (4000 < abs(pdgId) < 6000)",
+        ## additional c hadrons for jet fragmentation studies
+        #"keep abs(pdgId) = 10411 || abs(pdgId) = 10421 || abs(pdgId) = 10413 || abs(pdgId) = 10423 || abs(pdgId) = 20413 || abs(pdgId) = 20423 || abs(pdgId) = 10431 || abs(pdgId) = 10433 || abs(pdgId) = 20433", 
+        ## additional b hadrons for jet fragmentation studies
+        #"keep abs(pdgId) = 10511 || abs(pdgId) = 10521 || abs(pdgId) = 10513 || abs(pdgId) = 10523 || abs(pdgId) = 20513 || abs(pdgId) = 20523 || abs(pdgId) = 10531 || abs(pdgId) = 10533 || abs(pdgId) = 20533 || abs(pdgId) = 10541 || abs(pdgId) = 10543 || abs(pdgId) = 20543", 
+        ##keep SUSY particles
+        #"keep (1000001 <= abs(pdgId) <= 1000039 ) || ( 2000001 <= abs(pdgId) <= 2000015)",
+        ## keep protons 
+        #"keep pdgId = 2212",
+        #"keep status == 3 || ( 21 <= status <= 29) || ( 11 <= status <= 19)",  #keep event summary (status=3 for pythia6, 21 <= status <= 29 for pythia8)
+        #"keep isHardProcess() || fromHardProcessFinalState() || fromHardProcessDecayed() || fromHardProcessBeforeFSR() || (statusFlags().fromHardProcess() && statusFlags().isLastCopy())",  #keep event summary based on status flags
+
+        # Private configuration
         "drop  *  ",
         "keep ( status>=21 && status<=29 )", # keep hard process particles
         "keep abs(pdgId)==11 || abs(pdgId)==13 || abs(pdgId)==15", # keep electrons, muons, and taus
-        "keep ( abs(pdgId)==22 && status==1 )" # keep status=1 photons
+        #"keep ( abs(pdgId)==22 && status==1 )" # keep status=1 photons
+        "keep (status==1)" # keep all stable particles
     )
 )
 
