@@ -47,13 +47,6 @@ process.TFileService = cms.Service("TFileService",
    fileName = cms.string(options.outFilename)
 )
 
-inputDir = '/eos/uscms/store/user/ferencek/noreplica/Stop2ToStop1H_TuneCUETP8M1_13TeV-madgraph-pythia8/RunIISpring15DR74_AODSIM/150612_162933/0000/'
-inputFiles = []
-for f in os.listdir(inputDir):
-    if not os.path.isfile(os.path.join(inputDir,f)) or not f.endswith('.root'):
-        continue
-    inputFiles.append( os.path.join(inputDir.replace('/eos/uscms',''),f) )
-
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
         # MiniAOD
@@ -65,7 +58,15 @@ process.source = cms.Source("PoolSource",
     #eventsToProcess = cms.untracked.VEventRange('1:25')
     #eventsToProcess = cms.untracked.VEventRange('1:23')
 )
+
 if options.useInputDir:
+    inputDir = '/eos/uscms/store/user/ferencek/noreplica/Stop2ToStop1H_TuneCUETP8M1_13TeV-madgraph-pythia8/RunIISpring15DR74_AODSIM/150612_162933/0000/'
+    inputFiles = []
+    for f in os.listdir(inputDir):
+        if not os.path.isfile(os.path.join(inputDir,f)) or not f.endswith('.root'):
+            continue
+        inputFiles.append( os.path.join(inputDir.replace('/eos/uscms',''),f) )
+
     process.source.fileNames = cms.untracked.vstring()
     process.source.fileNames.extend( inputFiles ) # see https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuidePoolInputSources#Example_3_More_than_255_input_fi
 
